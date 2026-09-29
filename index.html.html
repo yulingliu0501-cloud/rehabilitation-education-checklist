@@ -56,7 +56,10 @@
         /* 實際 PDF 輸出的畫布 */
         .print-canvas { background: white; width: 100%; max-width: 800px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.2); min-height: 100%; font-size: 14px; }
         .print-header { border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 20px; }
-        .print-title { text-align: center; color: var(--primary-color); font-size: 1.5rem; margin-bottom: 15px; font-weight: bold; }
+        .print-title-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .print-logo img { max-height: 50px; }
+        .print-title { flex: 1; text-align: center; color: var(--primary-color); font-size: 1.5rem; font-weight: bold; }
+        .print-contact { text-align: right; font-size: 0.85rem; color: #555; }
         .patient-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
         .patient-info-grid div { margin-bottom: 5px; }
         
@@ -164,7 +167,17 @@
         <aside class="sidebar-right">
             <div class="print-canvas" id="print-area">
                 <div class="print-header">
-                    <div class="print-title">居家復健復能處方箋</div>
+                    <div class="print-title-area">
+                        <div class="print-logo">
+                            <!-- 請將 Logo 圖片上傳到 GitHub 的 images 資料夾中 -->
+                            <img src="./images/logo.png" alt="醫院Logo"> 
+                        </div>
+                        <div class="print-title">職能治療復健活動衛教單張</div>
+                        <div class="print-contact">
+                            <div>復健部竹北院區職能治療</div>
+                            <div>連絡電話：03-6677600 分機532081</div>
+                        </div>
+                    </div>
                     <div class="patient-info-grid">
                         <div><strong>個案姓名：</strong> <span id="outName">未填寫</span></div>
                         <div><strong>製作日期：</strong> <span id="outDate">未填寫</span></div>
