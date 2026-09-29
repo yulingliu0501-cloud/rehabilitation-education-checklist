@@ -1,529 +1,460 @@
-import React, { useState, useMemo } from 'react';
-import { Printer, Mail, Plus, Trash2, Search, FileText, User, Calendar, Activity, CheckCircle2 } from 'lucide-react';
-
-// --- Mock Data ---
-const EXERCISE_DATABASE = [
-  {
-    id: 1,
-    title: '坐到站',
-    categories: ['平衡訓練', '下肢肌力訓練'],
-    bodyParts: ['下肢'],
-    description: '由穩固椅子坐姿起身至站立，首先軀幹往前傾，臀部先離開座位再站起，站立穩定後，臀部彎曲，軀幹些微往前傾，再慢慢坐回，訓練大腿肌力與轉位能力。',
-    difficulties: ['簡單: 雙手扶住扶手', '難: 獨自執行或其他'],
-    equipment: ['椅子'],
-    precautions: '無法坐穩及無法單獨站立者，需要他人攙扶協助練習，記得協助者抓住訓練者的褲頭',
-    imageUrl: 'https://placehold.co/150x150?text=坐到站'
-  },
-  {
-    id: 2,
-    title: '踮腳',
-    categories: ['站姿平衡訓練', '下肢肌力訓練'],
-    bodyParts: ['下肢', '小腿'],
-    description: '雙手扶穩桌面，雙腳同時踮起腳跟後慢慢放下，訓練小腿肌力與站立控制。',
-    difficulties: ['簡單: 雙手扶住桌子', '難: 獨自執行'],
-    equipment: ['椅子', '桌子'],
-    precautions: '需可站立的人才可練習。如平衡不好的人需協助者抓住訓練者的褲頭',
-    imageUrl: 'https://placehold.co/150x150?text=踮腳'
-  },
-  {
-    id: 3,
-    title: '坐姿抬腳尖',
-    categories: ['下肢肌力', '踝關節活動'],
-    bodyParts: ['下肢', '腳踝'],
-    description: '坐在椅子上，雙腳腳跟著地，將腳尖向上抬起。',
-    difficulties: ['簡單: 坐姿-單腳輪流抬起', '難: 站姿-雙腳同時抬起'],
-    equipment: ['椅子'],
-    precautions: '避免身體過度後傾。站姿練習時可以扶著欄杆或著是穩固的傢俱協助維持平衡或是需他人在旁協助注意安全。',
-    imageUrl: 'https://placehold.co/150x150?text=坐姿抬腳尖'
-  },
-  {
-    id: 4,
-    title: '坐姿抬膝踏步',
-    categories: ['坐姿平衡', '髖關節活動度', '下肢肌力訓練', '心肺訓練'],
-    bodyParts: ['下肢', '髖關節'],
-    description: '坐在椅子前半部，左右腳輪流抬膝。',
-    difficulties: ['簡單: 雙手扶著椅子、墊腳尖', '難: 手放在腿上，腳抬起時離開地面'],
-    equipment: ['椅子'],
-    precautions: '如坐姿不穩定的人需他人在旁協助注意安全。',
-    imageUrl: 'https://placehold.co/150x150?text=坐姿抬膝踏步'
-  },
-  {
-    id: 5,
-    title: '牆面手臂上舉',
-    categories: ['關節活動', '伸展活動', '上肢肌力'],
-    bodyParts: ['上肢', '肩關節'],
-    description: '面向牆壁，以手指沿牆面慢慢向上爬',
-    difficulties: ['簡單: 坐椅子、他人協助', '難: 站立'],
-    equipment: ['椅子', '牆壁'],
-    precautions: '停留在些微緊繃的角度即可。注意不可聳肩。',
-    imageUrl: 'https://placehold.co/150x150?text=牆面手臂上舉'
-  }
-];
-
-const MAIN_GOALS = [
-  '促進耐力', '促進肌力', '促進日常生活功能', '促進呼吸訓練', '促進認知訓練'
-];
-
-// A functional component to handle the complex state of an individual exercise card before adding
-const ExerciseCard = ({ exercise, onAdd }) => {
-  const [prescription, setPrescription] = useState({ days: '', times: '', sets: '' });
-  const [selectedDifficulties, setSelectedDifficulties] = useState([]);
-  const [selectedEquipment, setSelectedEquipment] = useState([]);
-
-  const handleDifficultyToggle = (diff) => {
-    setSelectedDifficulties(prev => 
-      prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
-    );
-  };
-
-  const handleEquipmentToggle = (eq) => {
-    setSelectedEquipment(prev => 
-      prev.includes(eq) ? prev.filter(e => e !== eq) : [...prev, eq]
-    );
-  };
-
-  const handleAddClick = () => {
-    onAdd({
-      ...exercise,
-      customPrescription: prescription,
-      customDifficulties: selectedDifficulties,
-      customEquipment: selectedEquipment,
-      uniqueId: Date.now() + Math.random() // Ensure unique ID for duplicates in list
-    });
-    // Reset form after adding
-    setPrescription({ days: '', times: '', sets: '' });
-    setSelectedDifficulties([]);
-    setSelectedEquipment([]);
-  };
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-      <div className="flex justify-center bg-slate-50 border-b border-slate-100 p-4">
-        <img src={exercise.imageUrl} alt={exercise.title} className="w-[150px] h-[150px] object-cover rounded-md shadow-sm" />
-      </div>
-      <div className="p-4 flex-grow flex flex-col gap-3">
-        <div>
-          <h3 className="font-bold text-lg text-slate-800">{exercise.title}</h3>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {exercise.categories.map(cat => (
-              <span key={cat} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full border border-blue-100">{cat}</span>
-            ))}
-          </div>
-        </div>
-        
-        <p className="text-sm text-slate-600 line-clamp-3">{exercise.description}</p>
-
-        {/* Configuration Area */}
-        <div className="bg-slate-50 p-3 rounded-lg text-sm flex flex-col gap-3 mt-auto">
-          {/* Difficulties */}
-          <div>
-            <p className="font-medium text-slate-700 mb-1">難易度 (可複選):</p>
-            <div className="flex flex-col gap-1">
-              {exercise.difficulties.map(diff => (
-                <label key={diff} className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500" 
-                    checked={selectedDifficulties.includes(diff)}
-                    onChange={() => handleDifficultyToggle(diff)}
-                  />
-                  <span className="text-slate-600 text-xs">{diff}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Equipment */}
-          <div>
-            <p className="font-medium text-slate-700 mb-1">使用設備:</p>
-            <div className="flex flex-wrap gap-2">
-              {exercise.equipment.map(eq => (
-                <label key={eq} className="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500"
-                    checked={selectedEquipment.includes(eq)}
-                    onChange={() => handleEquipmentToggle(eq)}
-                  />
-                  <span className="text-slate-600 text-xs">{eq}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Prescription */}
-          <div>
-            <p className="font-medium text-slate-700 mb-1">處方:</p>
-            <div className="flex items-center gap-2 text-xs text-slate-600 flex-wrap">
-              <span>一天</span>
-              <input type="text" className="w-10 px-1 py-0.5 border rounded text-center" value={prescription.days} onChange={e => setPrescription({...prescription, days: e.target.value})} />
-              <span>次；每次：</span>
-              <input type="text" className="w-10 px-1 py-0.5 border rounded text-center" value={prescription.times} onChange={e => setPrescription({...prescription, times: e.target.value})} />
-              <span>次，做</span>
-              <input type="text" className="w-10 px-1 py-0.5 border rounded text-center" value={prescription.sets} onChange={e => setPrescription({...prescription, sets: e.target.value})} />
-              <span>組</span>
-            </div>
-          </div>
-        </div>
-
-        <button 
-          onClick={handleAddClick}
-          className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
-        >
-          <Plus size={18} /> 加入衛教單
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export default function App() {
-  // --- State ---
-  const [patientInfo, setPatientInfo] = useState({
-    name: '',
-    bedNumber: '',
-    recordId: '',
-    date: new Date().toISOString().split('T')[0],
-    therapistName: ''
-  });
-  
-  const [selectedGoals, setSelectedGoals] = useState([]);
-  const [otherGoal, setOtherGoal] = useState('');
-  
-  const [filters, setFilters] = useState({
-    keyword: '',
-    category: '',
-    bodyPart: ''
-  });
-
-  const [selectedExercises, setSelectedExercises] = useState([]);
-
-  // --- Handlers ---
-  const handleInfoChange = (e) => {
-    const { name, value } = e.target;
-    setPatientInfo(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleGoalToggle = (goal) => {
-    setSelectedGoals(prev => 
-      prev.includes(goal) ? prev.filter(g => g !== goal) : [...prev, goal]
-    );
-  };
-
-  const addExerciseToLeaflet = (exerciseConfig) => {
-    setSelectedExercises(prev => [...prev, exerciseConfig]);
-  };
-
-  const removeExercise = (uniqueId) => {
-    setSelectedExercises(prev => prev.filter(ex => ex.uniqueId !== uniqueId));
-  };
-
-  // --- Derived Data (Filtering) ---
-  const filteredExercises = useMemo(() => {
-    return EXERCISE_DATABASE.filter(ex => {
-      const matchKeyword = ex.title.toLowerCase().includes(filters.keyword.toLowerCase()) || 
-                           ex.description.toLowerCase().includes(filters.keyword.toLowerCase());
-      const matchCategory = filters.category === '' || ex.categories.includes(filters.category);
-      const matchBodyPart = filters.bodyPart === '' || ex.bodyParts.includes(filters.bodyPart);
-      return matchKeyword && matchCategory && matchBodyPart;
-    });
-  }, [filters]);
-
-  // Extract unique categories and body parts for dropdowns
-  const allCategories = useMemo(() => [...new Set(EXERCISE_DATABASE.flatMap(ex => ex.categories))], []);
-  const allBodyParts = useMemo(() => [...new Set(EXERCISE_DATABASE.flatMap(ex => ex.bodyParts))], []);
-
-  // --- Export Handlers ---
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleEmail = () => {
-    const goalText = [...selectedGoals, otherGoal ? `其他: ${otherGoal}` : ''].filter(Boolean).join(', ');
-    const exercisesText = selectedExercises.map((ex, idx) => 
-      `${idx + 1}. ${ex.title}\n` +
-      `   處方: 一天 ${ex.customPrescription.days || '_'} 次；每次 ${ex.customPrescription.times || '_'} 次，做 ${ex.customPrescription.sets || '_'} 組\n` +
-      `   注意事項: ${ex.precautions}`
-    ).join('\n\n');
-
-    const subject = encodeURIComponent(`衛教單張 - ${patientInfo.name || '個案'}`);
-    const body = encodeURIComponent(
-      `個案姓名: ${patientInfo.name}\n` +
-      `病歷號: ${patientInfo.recordId}\n` +
-      `治療師: ${patientInfo.therapistName}\n` +
-      `日期: ${patientInfo.date}\n\n` +
-      `【主要目標】\n${goalText}\n\n` +
-      `【衛教動作】\n${exercisesText}\n\n` +
-      `【安全提醒】\n動作過程若出現胸悶、暈眩、明顯疼痛、呼吸困難或不穩跌倒風險，請立即停止並聯絡治療師或醫療人員。`
-    );
-
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
-      <div className="max-w-[1600px] mx-auto p-4 md:p-6 flex flex-col xl:flex-row gap-8">
-        
-        {/* === LEFT COLUMN: EDITOR (Hidden on Print) === */}
-        <div className="xl:w-1/2 flex flex-col gap-6 print:hidden">
-          
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-              <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FileText size={24} /></div>
-              <h1 className="text-2xl font-bold text-slate-800">衛教單張產出系統</h1>
-            </div>
-
-            {/* 1. Header Form */}
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4 text-slate-700">
-                <User size={18} /> 基本資料
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">個案姓名</label>
-                  <input type="text" name="name" value={patientInfo.name} onChange={handleInfoChange} className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="輸入姓名..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">病歷號</label>
-                  <input type="text" name="recordId" value={patientInfo.recordId} onChange={handleInfoChange} className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="輸入病歷號..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">床號</label>
-                  <input type="text" name="bedNumber" value={patientInfo.bedNumber} onChange={handleInfoChange} className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="輸入床號..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">治療師姓名</label>
-                  <input type="text" name="therapistName" value={patientInfo.therapistName} onChange={handleInfoChange} className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="輸入治療師..." />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-600 mb-1">製作日期</label>
-                  <input type="date" name="date" value={patientInfo.date} onChange={handleInfoChange} className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                </div>
-              </div>
-            </section>
-
-            {/* 2. Main Goals */}
-            <section>
-              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4 text-slate-700">
-                <CheckCircle2 size={18} /> 主要目標
-              </h2>
-              <div className="flex flex-wrap gap-4">
-                {MAIN_GOALS.map(goal => (
-                  <label key={goal} className="flex items-center gap-2 cursor-pointer p-2 border rounded-lg hover:bg-slate-50 transition-colors">
-                    <input type="checkbox" className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      checked={selectedGoals.includes(goal)}
-                      onChange={() => handleGoalToggle(goal)}
-                    />
-                    <span className="text-sm font-medium text-slate-700">{goal}</span>
-                  </label>
-                ))}
-                <div className="flex items-center gap-2 w-full mt-2">
-                  <label className="flex items-center gap-2 cursor-pointer p-2">
-                    <span className="text-sm font-medium text-slate-700 whitespace-nowrap">其他:</span>
-                  </label>
-                  <input type="text" className="flex-grow p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" 
-                    placeholder="自行輸入其他目標..." 
-                    value={otherGoal}
-                    onChange={(e) => setOtherGoal(e.target.value)}
-                  />
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* 3. Exercise Database */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-grow flex flex-col">
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-4 text-slate-800 border-b border-slate-100 pb-4">
-              <Activity size={22} className="text-blue-600" /> 衛教動作資料庫
-            </h2>
-            
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-3 text-slate-400" />
-                <input type="text" placeholder="關鍵字搜索..." 
-                  className="w-full pl-9 p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={filters.keyword} onChange={e => setFilters({...filters, keyword: e.target.value})}
-                />
-              </div>
-              <select className="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                value={filters.category} onChange={e => setFilters({...filters, category: e.target.value})}
-              >
-                <option value="">所有動作類別</option>
-                {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <select className="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                value={filters.bodyPart} onChange={e => setFilters({...filters, bodyPart: e.target.value})}
-              >
-                <option value="">所有部位/功能</option>
-                {allBodyParts.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-
-            {/* Exercise List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-2" style={{ maxHeight: '600px' }}>
-              {filteredExercises.length > 0 ? (
-                filteredExercises.map(ex => (
-                  <ExerciseCard key={ex.id} exercise={ex} onAdd={addExerciseToLeaflet} />
-                ))
-              ) : (
-                <div className="col-span-full text-center py-8 text-slate-500">找不到符合條件的動作。</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {}
-        {/* === RIGHT COLUMN: PREVIEW (Full width on Print) === */}
-        <div className="xl:w-1/2 flex flex-col gap-4 print:w-full print:block">
-          
-          {/* Action Buttons (Hidden on print) */}
-          <div className="flex justify-end gap-3 print:hidden sticky top-4 z-10">
-            <button onClick={handleEmail} className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 font-medium transition-colors">
-              <Mail size={18} /> 手機寄送信箱
-            </button>
-            <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 font-medium transition-colors">
-              <Printer size={18} /> 產出PDF (列印)
-            </button>
-          </div>
-
-          {/* Leaflet Preview Document */}
-          <div className="bg-white shadow-lg print:shadow-none rounded-xl print:rounded-none flex-grow print:w-full overflow-hidden border border-slate-200 print:border-none">
-            {/* Document Padding Container */}
-            <div className="p-8 md:p-12 print:p-0 print:max-w-4xl print:mx-auto">
-              
-              {/* Doc Header */}
-              <div className="text-center mb-8 border-b-2 border-slate-800 pb-6">
-                <h1 className="text-3xl font-bold text-slate-900 tracking-wider mb-2">個別化衛教指導單張</h1>
-                <p className="text-slate-500 flex items-center justify-center gap-2">
-                  <Calendar size={16} /> 製作日期: {patientInfo.date || '未填寫'}
-                </p>
-              </div>
-
-              {/* Patient Info Grid */}
-              <div className="grid grid-cols-2 gap-y-3 gap-x-8 mb-8 bg-slate-50 print:bg-transparent p-4 rounded-lg print:p-0">
-                <div className="flex text-lg">
-                  <span className="font-semibold text-slate-700 w-24">姓名：</span>
-                  <span className="border-b border-slate-400 flex-grow">{patientInfo.name}</span>
-                </div>
-                <div className="flex text-lg">
-                  <span className="font-semibold text-slate-700 w-24">病歷號：</span>
-                  <span className="border-b border-slate-400 flex-grow">{patientInfo.recordId}</span>
-                </div>
-                <div className="flex text-lg">
-                  <span className="font-semibold text-slate-700 w-24">床號：</span>
-                  <span className="border-b border-slate-400 flex-grow">{patientInfo.bedNumber}</span>
-                </div>
-                <div className="flex text-lg">
-                  <span className="font-semibold text-slate-700 w-24">治療師：</span>
-                  <span className="border-b border-slate-400 flex-grow">{patientInfo.therapistName}</span>
-                </div>
-              </div>
-
-              {/* Goals */}
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-slate-800 mb-3 border-l-4 border-blue-600 pl-3">主要目標</h3>
-                <div className="flex flex-wrap gap-x-6 gap-y-2 pl-4">
-                  {selectedGoals.map(goal => (
-                    <div key={goal} className="flex items-center gap-2 text-lg">
-                      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs">✓</div>
-                      {goal}
-                    </div>
-                  ))}
-                  {otherGoal && (
-                    <div className="flex items-center gap-2 text-lg">
-                      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs">✓</div>
-                      其他: {otherGoal}
-                    </div>
-                  )}
-                  {selectedGoals.length === 0 && !otherGoal && (
-                    <span className="text-slate-400 italic">尚未選擇目標</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Selected Exercises */}
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-slate-800 mb-4 border-l-4 border-blue-600 pl-3">衛教動作計畫</h3>
-                {selectedExercises.length === 0 ? (
-                  <div className="text-center py-10 bg-slate-50 rounded-lg text-slate-400 border border-dashed border-slate-300 print:hidden">
-                    請從左側資料庫加入動作
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-6">
-                    {selectedExercises.map((ex, index) => (
-                      <div key={ex.uniqueId} className="flex flex-col md:flex-row gap-6 p-4 border border-slate-200 rounded-xl relative group print:break-inside-avoid print:border-slate-300">
-                        {/* Remove button (hidden on print) */}
-                        <button 
-                          onClick={() => removeExercise(ex.uniqueId)}
-                          className="absolute top-2 right-2 text-red-400 hover:text-red-600 bg-red-50 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
-                          title="移除此動作"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-
-                        <div className="flex-shrink-0 flex items-start justify-center md:justify-start">
-                          <img src={ex.imageUrl} alt={ex.title} className="w-[150px] h-[150px] object-cover rounded-lg border border-slate-200 shadow-sm" />
-                        </div>
-                        <div className="flex-grow flex flex-col gap-2">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-xl font-bold text-blue-700">{index + 1}.</span>
-                            <h4 className="text-xl font-bold text-slate-800">{ex.title}</h4>
-                          </div>
-                          <p className="text-slate-700 text-justify">{ex.description}</p>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 bg-slate-50 print:bg-transparent p-3 rounded-lg text-sm">
-                            <div>
-                              <span className="font-semibold text-slate-700">難易度：</span>
-                              {ex.customDifficulties.length > 0 ? ex.customDifficulties.join(', ') : '未指定'}
-                            </div>
-                            <div>
-                              <span className="font-semibold text-slate-700">使用設備：</span>
-                              {ex.customEquipment.length > 0 ? ex.customEquipment.join(', ') : '無'}
-                            </div>
-                            <div className="md:col-span-2 text-lg text-blue-800 font-medium bg-blue-50/50 print:bg-transparent p-2 rounded border border-blue-100 print:border-none print:p-0 mt-1">
-                              <span className="font-bold">處方：</span>
-                              一天 <span className="underline decoration-slate-400 underline-offset-4 px-1">{ex.customPrescription.days || '___'}</span> 次；
-                              每次 <span className="underline decoration-slate-400 underline-offset-4 px-1">{ex.customPrescription.times || '___'}</span> 次，
-                              做 <span className="underline decoration-slate-400 underline-offset-4 px-1">{ex.customPrescription.sets || '___'}</span> 組
-                            </div>
-                          </div>
-                          
-                          <div className="mt-2 text-sm">
-                            <span className="font-bold text-orange-700">⚠️ 注意事項：</span>
-                            <span className="text-slate-700">{ex.precautions}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Footer Safety Warning */}
-              <div className="mt-12 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg print:break-inside-avoid">
-                <h4 className="font-bold text-red-800 text-lg flex items-center gap-2 mb-1">
-                  安全提醒
-                </h4>
-                <p className="text-red-700 text-lg font-medium">
-                  動作過程若出現胸悶、暈眩、明顯疼痛、呼吸困難或不穩跌倒風險，請立即停止並聯絡治療師或醫療人員。
-                </p>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Global CSS for printing */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          body {
-            background-color: white !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          @page {
-            margin: 1.5cm;
-          }
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>復健衛教處方箋開立系統</title>
+    <!-- 引入 html2pdf 庫用於生成 PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #00796b;
+            --bg-color: #f5f7f9;
+            --border-color: #e0e0e0;
+            --text-main: #333;
         }
-      `}} />
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* 頂部導覽列 */
+        .header { background-color: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .header h1 { margin: 0; font-size: 1.5rem; color: var(--primary-color); }
+        .btn-group button { padding: 8px 15px; margin-left: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-pdf { background-color: var(--primary-color); color: white; }
+        .btn-email { background-color: #455a64; color: white; }
+
+        /* 主要版面 */
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        
+        /* 左側：個案與篩選區 */
+        .sidebar-left { width: 300px; background: white; padding: 20px; overflow-y: auto; border-right: 1px solid var(--border-color); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        #otherGoalInput { margin-top: 10px; display: none; }
+        .section-title { border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px; font-size: 1.1rem; }
+
+        /* 中間：動作資料庫 */
+        .database-area { flex: 1; padding: 20px; overflow-y: auto; }
+        .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .search-bar input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        
+        .card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; border: 1px solid var(--border-color); }
+        .card-img { height: 160px; background-color: #eaeaea; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .card-content { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+        .card-title { font-size: 1.1rem; font-weight: bold; margin: 0 0 5px 0; }
+        .card-tags { font-size: 0.8rem; color: #666; margin-bottom: 10px; }
+        .card-desc { font-size: 0.9rem; flex: 1; margin-bottom: 15px; color: #555; }
+        .btn-add { background-color: #e0f2f1; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 8px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn-add:hover { background-color: var(--primary-color); color: white; }
+
+        /* 右側：處方預覽與列印區 */
+        .sidebar-right { width: 400px; background: #e0e0e0; padding: 20px; overflow-y: auto; display: flex; justify-content: center; }
+        
+        /* 實際 PDF 輸出的畫布 */
+        .print-canvas { background: white; width: 100%; max-width: 800px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.2); min-height: 100%; font-size: 14px; }
+        .print-header { border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 20px; }
+        .print-title { text-align: center; color: var(--primary-color); font-size: 1.5rem; margin-bottom: 15px; font-weight: bold; }
+        .patient-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
+        .patient-info-grid div { margin-bottom: 5px; }
+        
+        .prescription-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+        .prescription-item { border: 1px solid var(--border-color); padding: 10px; border-radius: 5px; display: flex; gap: 15px; }
+        .p-item-img { width: 100px; height: 100px; background: #eee; flex-shrink: 0; }
+        .p-item-img img { width: 100%; height: 100%; object-fit: cover; }
+        .p-item-details { flex: 1; }
+        .p-item-title { font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px; margin-top:0;}
+        .p-item-row { font-size: 0.85rem; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+        .p-input { width: 40px; text-align: center; border: 1px solid #ccc; border-radius: 3px; padding: 2px; }
+        .p-item-warn { font-size: 0.8rem; color: #d32f2f; background: #ffebee; padding: 4px; border-radius: 3px; margin-top: 5px; }
+        .btn-remove { background: #ffcdd2; color: #c62828; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; float: right; font-size: 0.8rem; }
+
+        .safety-warning { border: 2px solid #ff9800; background-color: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: bold; color: #e65100; text-align: justify; }
+
+        /* 隱藏不想列印的元素 */
+        .hide-on-print { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- 頂部導覽列 -->
+    <header class="header">
+        <h1>🏥 復健復能處方箋開立系統</h1>
+        <div class="btn-group">
+            <button class="btn-email" onclick="sendEmail()">✉️ 寄送至信箱</button>
+            <button class="btn-pdf" onclick="generatePDF()">📄 匯出 PDF</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 左側面板：個案資料 -->
+        <aside class="sidebar-left">
+            <div class="section-title">個案資料設定</div>
+            <div class="form-group">
+                <label>個案姓名</label>
+                <input type="text" id="pName" placeholder="例如：王小明" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>床號</label>
+                <input type="text" id="pBed" placeholder="例如：501A" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>病歷號</label>
+                <input type="text" id="pRecord" placeholder="輸入病歷號" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>製作日期</label>
+                <input type="date" id="pDate" onchange="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>治療師姓名</label>
+                <input type="text" id="pTherapist" placeholder="輸入姓名" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>主要目標</label>
+                <select id="pGoal" onchange="toggleOtherGoal(); updatePreview()">
+                    <option value="">請選擇目標</option>
+                    <option value="促進耐力">促進耐力</option>
+                    <option value="促進肌力">促進肌力</option>
+                    <option value="促進日常生活功能">促進日常生活功能</option>
+                    <option value="促進呼吸訓練">促進呼吸訓練</option>
+                    <option value="促進認知訓練">促進認知訓練</option>
+                    <option value="其他">其他 (自行輸入)</option>
+                </select>
+                <input type="text" id="otherGoalInput" placeholder="請輸入目標" oninput="updatePreview()">
+            </div>
+        </aside>
+
+        <!-- 中間面板：動作資料庫 -->
+        <main class="database-area">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="關鍵字搜索 (如：坐到站、肌力)..." oninput="filterDB()">
+                <select id="categoryFilter" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc;" onchange="filterDB()">
+                    <option value="">所有分類</option>
+                    <option value="平衡訓練">平衡訓練</option>
+                    <option value="下肢肌力">下肢肌力</option>
+                    <option value="上肢肌力">上肢肌力</option>
+                    <option value="伸展">伸展活動</option>
+                </select>
+            </div>
+            <div class="grid-container" id="dbGrid">
+                <!-- JS 動態生成卡片 -->
+            </div>
+        </main>
+
+        <!-- 右側面板：處方箋預覽區 (PDF 輸出目標) -->
+        <aside class="sidebar-right">
+            <div class="print-canvas" id="print-area">
+                <div class="print-header">
+                    <div class="print-title">居家復健復能處方箋</div>
+                    <div class="patient-info-grid">
+                        <div><strong>個案姓名：</strong> <span id="outName">未填寫</span></div>
+                        <div><strong>製作日期：</strong> <span id="outDate">未填寫</span></div>
+                        <div><strong>病歷號碼：</strong> <span id="outRecord">未填寫</span></div>
+                        <div><strong>治療師：</strong> <span id="outTherapist">未填寫</span></div>
+                        <div><strong>床位號碼：</strong> <span id="outBed">未填寫</span></div>
+                        <div><strong>主要目標：</strong> <span id="outGoal">未填寫</span></div>
+                    </div>
+                </div>
+
+                <!-- 處方動作清單 -->
+                <div class="prescription-list" id="prescriptionList">
+                    <p style="text-align: center; color: #999; margin-top: 50px;" class="hide-on-print">請從左側資料庫將動作加入處方箋</p>
+                </div>
+
+                <!-- 底部安全提醒 -->
+                <div class="safety-warning">
+                    ⚠️ 安全提醒：<br>
+                    動作過程若出現胸悶、暈眩、明顯疼痛、呼吸困難或不穩跌倒風險，請立即停止並聯絡治療師或醫療人員。
+                </div>
+            </div>
+        </aside>
     </div>
-  );
-}
+
+    <script>
+        // 資料庫：擷取自文件 (圖片路徑已修正為 ./images/ )
+        const exerciseDB = [
+            {
+                id: 1,
+                name: "坐到站",
+                category: "平衡訓練、下肢肌力訓練",
+                image: "./images/sit-to-stand.jpg",
+                desc: "由穩固椅子坐姿起身至站立，首先軀幹往前傾，臀部先離開座位再站起，再慢慢坐回，訓練大腿肌力與轉位能力。",
+                easy: "雙手扶住扶手、獨自執行",
+                hard: "雙手置於身體兩側或胸前",
+                equipment: "椅子",
+                precautions: "無法坐穩及無法單獨站立者，需要他人攙扶協助練習。"
+            },
+            {
+                id: 2,
+                name: "踮腳 (Heel Raise)",
+                category: "站姿平衡訓練、下肢肌力訓練",
+                image: "./images/heel-raise.jpg",
+                desc: "雙手扶穩桌面，雙腳同時踮起腳跟後慢慢放下，訓練小腿肌力與站立控制。",
+                easy: "雙手扶住桌子",
+                hard: "雙手放在桌上、置於身體兩側",
+                equipment: "椅子、桌子",
+                precautions: "需可站立的人才可練習。如平衡不好需協助者在旁。"
+            },
+            {
+                id: 3,
+                name: "坐姿抬腳尖",
+                category: "下肢肌力、踝關節活動",
+                image: "./images/toe-raise.jpg",
+                desc: "坐在椅子上，雙腳腳跟著地，將腳尖向上抬起。",
+                easy: "坐姿單腳輪流抬起",
+                hard: "站姿單/雙腳抬起",
+                equipment: "椅子",
+                precautions: "避免身體過度後傾。站姿需注意安全。"
+            },
+            {
+                id: 4,
+                name: "坐姿抬膝踏步",
+                category: "坐姿平衡、下肢肌力訓練、心肺訓練",
+                image: "./images/seated-marching.jpg",
+                desc: "坐在椅子前半部，左右腳輪流抬膝。",
+                easy: "雙手扶著椅子、墊腳尖取代腳抬起離地",
+                hard: "手放在腿上，腳抬起時離開地面",
+                equipment: "椅子",
+                precautions: "如坐姿不穩定的人需他人在旁協助注意安全。"
+            },
+            {
+                id: 5,
+                name: "牆面手臂上舉",
+                category: "關節活動、伸展活動、上肢肌力",
+                image: "./images/wall-walk.jpg",
+                desc: "面向牆壁，以手指沿牆面慢慢向上爬。",
+                easy: "坐椅子、他人協助",
+                hard: "站立獨立執行",
+                equipment: "無",
+                precautions: "停留在些微緊繃的角度即可。注意不可聳肩。"
+            },
+            {
+                id: 6,
+                name: "扶桌側走",
+                category: "平衡活動、下肢肌力訓練",
+                image: "./images/side-stepping.jpg",
+                desc: "一手/兩手扶著桌邊行走。",
+                easy: "兩手扶著桌子",
+                hard: "一手扶著桌子",
+                equipment: "桌子、椅子(備用)",
+                precautions: "站姿不穩定或是體力比較差的人需協助者在旁陪同。"
+            }
+        ];
+
+        let cart = [];
+
+        // 初始化日期為今日
+        document.getElementById('pDate').valueAsDate = new Date();
+
+        // 渲染資料庫卡片
+        function renderDB(data) {
+            const grid = document.getElementById('dbGrid');
+            grid.innerHTML = '';
+            data.forEach(ex => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-img">
+                        <img src="${ex.image}" alt="${ex.name}" onerror="this.src='https://via.placeholder.com/250x160?text=無圖片'">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">${ex.name}</h3>
+                        <div class="card-tags">${ex.category}</div>
+                        <div class="card-desc">${ex.desc}</div>
+                        <button class="btn-add" onclick="addToCart(${ex.id})">➕ 加入處方箋</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 搜尋篩選功能
+        function filterDB() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            
+            const filtered = exerciseDB.filter(ex => {
+                const matchKeyword = ex.name.includes(keyword) || ex.desc.includes(keyword) || ex.category.includes(keyword);
+                const matchCategory = category === "" || ex.category.includes(category);
+                return matchKeyword && matchCategory;
+            });
+            renderDB(filtered);
+        }
+
+        // 處理「主要目標」為其他的文字框顯示
+        function toggleOtherGoal() {
+            const select = document.getElementById('pGoal');
+            const input = document.getElementById('otherGoalInput');
+            input.style.display = select.value === '其他' ? 'block' : 'none';
+        }
+
+        // 即時更新處方箋預覽的個案資料
+        function updatePreview() {
+            document.getElementById('outName').innerText = document.getElementById('pName').value || '未填寫';
+            document.getElementById('outBed').innerText = document.getElementById('pBed').value || '未填寫';
+            document.getElementById('outRecord').innerText = document.getElementById('pRecord').value || '未填寫';
+            document.getElementById('outDate').innerText = document.getElementById('pDate').value || '未填寫';
+            document.getElementById('outTherapist').innerText = document.getElementById('pTherapist').value || '未填寫';
+            
+            let goal = document.getElementById('pGoal').value;
+            if (goal === '其他') goal = document.getElementById('otherGoalInput').value;
+            document.getElementById('outGoal').innerText = goal || '未填寫';
+        }
+
+        // 加入處方清單
+        function addToCart(id) {
+            const exercise = exerciseDB.find(e => e.id === id);
+            if(cart.find(item => item.id === id)) {
+                alert('此動作已經在處方箋中了！');
+                return;
+            }
+            cart.push({...exercise, days: 1, times: 10, sets: 3, difficulty: 'easy', equipCheck: true});
+            renderCart();
+        }
+
+        // 移除處方清單
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            renderCart();
+        }
+
+        // 渲染右側清單
+        function renderCart() {
+            const list = document.getElementById('prescriptionList');
+            if(cart.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999; margin-top: 50px;" class="hide-on-print">請從左側資料庫將動作加入處方箋</p>';
+                return;
+            }
+            list.innerHTML = '';
+            cart.forEach((ex, index) => {
+                const item = document.createElement('div');
+                item.className = 'prescription-item';
+                item.innerHTML = `
+                    <div class="p-item-img">
+                        <img src="${ex.image}" alt="${ex.name}" onerror="this.src='https://via.placeholder.com/100x100?text=無圖片'">
+                    </div>
+                    <div class="p-item-details">
+                        <button class="btn-remove hide-on-print" onclick="removeFromCart(${ex.id})">刪除</button>
+                        <h4 class="p-item-title">${ex.name}</h4>
+                        <div class="p-item-row">
+                            <strong>指示：</strong> ${ex.desc}
+                        </div>
+                        <div class="p-item-row hide-on-print">
+                            <strong>難度：</strong> 
+                            <label><input type="radio" name="diff_${ex.id}" value="easy" checked> 簡單 (${ex.easy})</label>
+                            <label><input type="radio" name="diff_${ex.id}" value="hard"> 困難 (${ex.hard})</label>
+                        </div>
+                        <div class="p-item-row" style="display:none;" id="print_diff_${ex.id}">
+                            <strong>難度調整：</strong> <span class="diff-text">${ex.easy}</span>
+                        </div>
+                        <div class="p-item-row hide-on-print">
+                            <strong>使用設備：</strong>
+                            <label><input type="checkbox" checked onchange="document.getElementById('print_equip_${ex.id}').style.display = this.checked ? 'inline' : 'none'"> ${ex.equipment}</label>
+                        </div>
+                        <div class="p-item-row" id="print_equip_${ex.id}">
+                            <strong>使用設備：</strong> ${ex.equipment}
+                        </div>
+                        <div class="p-item-row" style="background:#f9f9f9; padding:8px; margin-top:8px; border-radius:4px;">
+                            <strong>處方：</strong>
+                            一天 <input type="number" class="p-input" value="${ex.days}" min="1"> 次；
+                            每次 <input type="number" class="p-input" value="${ex.times}" min="1"> 下，
+                            做 <input type="number" class="p-input" value="${ex.sets}" min="1"> 組。
+                        </div>
+                        <div class="p-item-warn">
+                            <strong>注意事項：</strong> ${ex.precautions}
+                        </div>
+                    </div>
+                `;
+                
+                // 綁定單選按鈕事件來切換列印時顯示的難度文字
+                setTimeout(() => {
+                    const radios = item.querySelectorAll(`input[name="diff_${ex.id}"]`);
+                    const diffText = item.querySelector('.diff-text');
+                    const printDiffRow = item.querySelector(`#print_diff_${ex.id}`);
+                    
+                    // 列印時需要把選項變成純文字顯示
+                    printDiffRow.style.display = 'block'; 
+
+                    radios.forEach(radio => {
+                        radio.addEventListener('change', (e) => {
+                            diffText.innerText = e.target.value === 'easy' ? ex.easy : ex.hard;
+                        });
+                    });
+                }, 0);
+
+                list.appendChild(item);
+            });
+        }
+
+        // 生成 PDF (隱藏按鈕、確保版面正確後匯出)
+        function generatePDF() {
+            if(cart.length === 0) {
+                alert('處方箋目前是空的，請先加入動作！');
+                return;
+            }
+            
+            // 隱藏不必要的元素
+            const hideElements = document.querySelectorAll('.hide-on-print');
+            hideElements.forEach(el => el.style.display = 'none');
+
+            // 處理 input 框在 PDF 裡面的顯示問題（將 input 轉為純文字）
+            const inputs = document.querySelectorAll('.prescription-list input[type="number"]');
+            inputs.forEach(input => {
+                const span = document.createElement('span');
+                span.innerText = input.value;
+                span.className = 'temp-print-span';
+                span.style.fontWeight = 'bold';
+                span.style.color = 'blue';
+                span.style.padding = '0 5px';
+                span.style.borderBottom = '1px solid #333';
+                input.parentNode.insertBefore(span, input);
+                input.style.display = 'none';
+            });
+
+            const element = document.getElementById('print-area');
+            const opt = {
+                margin:       10,
+                filename:     `復健處方箋_${document.getElementById('pName').value || '未命名'}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 開始產生 PDF
+            html2pdf().set(opt).from(element).save().then(() => {
+                // 還原畫面
+                hideElements.forEach(el => el.style.display = '');
+                document.querySelectorAll('.temp-print-span').forEach(el => el.remove());
+                inputs.forEach(input => input.style.display = 'inline-block');
+            });
+        }
+
+        // 手機/電腦 寄信功能
+        function sendEmail() {
+            if(cart.length === 0) {
+                alert('處方箋目前是空的！');
+                return;
+            }
+            const pName = document.getElementById('pName').value || '個案';
+            const subject = encodeURIComponent(`居家復健復能處方箋 - ${pName}`);
+            const body = encodeURIComponent(`您好，\n\n這是為您開立的居家復健處方箋，請查閱系統匯出的 PDF 檔案進行練習。\n\n安全提醒：\n動作過程若出現胸悶、暈眩、明顯疼痛、呼吸困難或不穩跌倒風險，請立即停止並聯絡治療師或醫療人員。\n\n祝 平安健康！`);
+            
+            // 使用 mailto 協議開啟預設信箱 APP
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+            
+            // 提示使用者
+            setTimeout(() => {
+                alert("由於技術限制，網頁無法直接自動夾帶附件 PDF。請您先點擊「匯出 PDF」將檔案下載到手機或電腦中，然後在彈出的郵件軟體中手動插入該 PDF 附件寄出。");
+            }, 500);
+        }
+
+        // 初始載入
+        renderDB(exerciseDB);
+        updatePreview();
+
+    </script>
+</body>
+</html>
