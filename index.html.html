@@ -56,10 +56,7 @@
         /* 實際 PDF 輸出的畫布 */
         .print-canvas { background: white; width: 100%; max-width: 800px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.2); min-height: 100%; font-size: 14px; }
         .print-header { border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 20px; }
-        .print-title-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .print-logo img { max-height: 50px; }
-        .print-title { flex: 1; text-align: center; color: var(--primary-color); font-size: 1.5rem; font-weight: bold; }
-        .print-contact { text-align: right; font-size: 0.85rem; color: #555; }
+        .print-title { text-align: center; color: var(--primary-color); font-size: 1.5rem; margin-bottom: 15px; font-weight: bold; }
         .patient-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
         .patient-info-grid div { margin-bottom: 5px; }
         
@@ -167,17 +164,7 @@
         <aside class="sidebar-right">
             <div class="print-canvas" id="print-area">
                 <div class="print-header">
-                    <div class="print-title-area">
-                        <div class="print-logo">
-                            <!-- 請將 Logo 圖片上傳到 GitHub 的 images 資料夾中 -->
-                            <img src="./images/logo.png" alt="醫院Logo"> 
-                        </div>
-                        <div class="print-title">職能治療復健活動衛教單張</div>
-                        <div class="print-contact">
-                            <div>復健部竹北院區職能治療</div>
-                            <div>連絡電話：03-6677600 分機532081</div>
-                        </div>
-                    </div>
+                    <div class="print-title">居家復健復能處方箋</div>
                     <div class="patient-info-grid">
                         <div><strong>個案姓名：</strong> <span id="outName">未填寫</span></div>
                         <div><strong>製作日期：</strong> <span id="outDate">未填寫</span></div>
@@ -437,17 +424,35 @@
                         </div>
                         <div class="p-item-row hide-on-print">
                             <strong>使用設備：</strong>
-                            <label><input type="checkbox" checked onchange="document.getElementById('print_equip_${ex.id}').style.display = this.checked ? 'inline' : 'none'"> ${ex.equipment}</label>
+                            <label><input type="checkbox" checked onchange="document.getElementById('print_equip_${ex.id}').style.display = this.checked ? 'block' : 'none'"> ${ex.equipment}</label>
                         </div>
                         <div class="p-item-row" id="print_equip_${ex.id}">
                             <strong>使用設備：</strong> ${ex.equipment}
                         </div>
-                        <div class="p-item-row" style="background:#f9f9f9; padding:8px; margin-top:8px; border-radius:4px;">
-                            <strong>處方：</strong>
-                            一天 <input type="number" class="p-input" value="${ex.days}" min="1"> 次；
-                            每次 <input type="number" class="p-input" value="${ex.times}" min="1"> 下，
-                            做 <input type="number" class="p-input" value="${ex.sets}" min="1"> 組。
+                        
+                        <!-- 處方與訓練時間區塊 -->
+                        <div class="p-item-row" style="background:#f9f9f9; padding:10px; margin-top:8px; border-radius:4px;">
+                            <div style="margin-bottom: 5px;">
+                                <strong>處方：</strong>
+                                一天 <input type="number" class="p-input" value="${ex.days}" min="1"> 次；
+                                每次 <input type="number" class="p-input" value="${ex.times}" min="1"> 下，
+                                做 <input type="number" class="p-input" value="${ex.sets}" min="1"> 組。
+                            </div>
+                            
+                            <!-- 新增：訓練時間的打勾開關 (列印時會隱藏這個開關本身) -->
+                            <div class="hide-on-print" style="margin-top: 5px;">
+                                <label style="color: var(--primary-color); font-weight: bold; cursor: pointer;">
+                                    <input type="checkbox" onchange="document.getElementById('print_time_${ex.id}').style.display = this.checked ? 'block' : 'none'"> 
+                                    ➕ 標註訓練時間
+                                </label>
+                            </div>
+                            
+                            <!-- 訓練時間內容 (預設隱藏，打勾後才會出現，並顯示在 PDF 上) -->
+                            <div id="print_time_${ex.id}" style="display: none; margin-top: 5px; border-top: 1px dashed #ccc; padding-top: 5px;">
+                                <strong>訓練時間：</strong> 每次 <input type="number" class="p-input" value="15" min="1"> 分鐘
+                            </div>
                         </div>
+                        
                         <div class="p-item-warn">
                             <strong>注意事項：</strong> ${ex.precautions}
                         </div>
