@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>復健衛教處方箋開立系統</title>
+    <title>職能治療活動處方開立系統</title>
     <!-- 引入 html2pdf 庫用於生成 PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -51,10 +51,10 @@
         .btn-add:hover { background-color: var(--primary-color); color: white; }
 
         /* 右側：處方預覽與列印區 */
-        .sidebar-right { width: 500px; background: #e0e0e0; padding: 20px; overflow-y: auto; display: flex; justify-content: center; }
+        .sidebar-right { width: 500px; background: #e0e0e0; padding: 20px; overflow-y: auto; }
         
         /* 實際 PDF 輸出的畫布 */
-        .print-canvas { background: white; width: 100%; max-width: 800px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.2); min-height: 100%; font-size: 14px; }
+        .print-canvas { background: white; width: 100%; max-width: 800px; margin: 0 auto; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.2); min-height: 100%; height: fit-content; font-size: 14px; }
         .print-header { border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 20px; }
         .print-title { text-align: center; color: var(--primary-color); font-size: 1.5rem; margin-bottom: 15px; font-weight: bold; }
         .patient-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
